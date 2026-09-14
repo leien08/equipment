@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>設備登記系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF7F0;
+    --paper-line:#E4DCC8;
+    --ink:#22314A;
+    --ink-soft:#5B6478;
+    --moss:#3E6B54;
+    --moss-soft:#E4EEE7;
+    --rust:#9C4A34;
+    --rust-soft:#F5E5DE;
+    --gold:#B08B2E;
+    --gold-soft:#F5EEDA;
+    --card:#FFFFFF;
+    --shadow: 0 1px 0 rgba(34,49,74,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 27px, var(--paper-line) 28px),
+      var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans TC', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px;}
+
+  /* ---------- Header ---------- */
+  header.top{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:16px;
+    border-bottom:3px double var(--ink);
+    padding-bottom:14px;
+    margin-bottom:22px;
+  }
+  header.top h1{
+    font-family:'Noto Serif TC', serif;
+    font-weight:900;
+    font-size:30px;
+    letter-spacing:2px;
+    margin:0;
+    color:var(--ink);
+  }
+  header.top .stamp{
+    font-size:12px;
+    color:var(--ink-soft);
+    letter-spacing:1px;
+  }
+  .tabs{display:flex;gap:2px;}
+  .tabs button{
+    font-family:'Noto Sans TC',sans-serif;
+    font-size:14px;
+    font-weight:600;
+    padding:9px 18px;
+    background:transparent;
+    border:1.5px solid var(--ink);
+    border-bottom:none;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-radius:6px 6px 0 0;
+  }
+  .tabs button.active{background:var(--ink);color:#fff;}
+
+  section{display:none;}
+  section.active{display:block;}
+
+  /* ---------- Calendar toolbar ---------- */
+  .cal-toolbar{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:14px;flex-wrap:wrap;gap:10px;
+  }
+  .cal-toolbar .month-nav{display:flex;align-items:center;gap:12px;}
+  .cal-toolbar button.nav{
+    width:32px;height:32px;border-radius:50%;border:1.5px solid var(--ink);
+    background:#fff;color:var(--ink);font-size:15px;cursor:pointer;
+  }
+  .cal-toolbar button.nav:hover{background:var(--ink);color:#fff;}
+  .cal-toolbar .month-label{
+    font-family:'Noto Serif TC',serif;font-weight:700;font-size:20px;min-width:130px;text-align:center;
+  }
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--ink-soft);align-items:center;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .dot.g{background:var(--gold);}
+  .dot.b{background:var(--rust);}
+  .dot.r{background:var(--moss);}
+
+  /* ---------- Calendar grid ---------- */
+  .cal-grid{
+    background:var(--card);
+    border:1.5px solid var(--ink);
+    border-radius:8px;
+    overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  .dow-row, .week-row{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+  }
+  .dow-row div{
+    text-align:center;font-size:12px;font-weight:700;color:#fff;
+    background:var(--ink);padding:8px 0;
+    border-right:1px solid rgba(255,255,255,0.15);
+  }
+  .dow-row div:last-child{border-right:none;}
+  .dow-row div.weekend{background:var(--rust);}
+
+  .day-cell{
+    min-height:96px;
+    border-right:1px solid var(--paper-line);
+    border-bottom:1px solid var(--paper-line);
+    padding:6px 7px;
+    cursor:pointer;
+    position:relative;
+    transition:background .12s ease;
+  }
+  .week-row .day-cell:last-child{border-right:none;}
+  .day-cell:hover{background:var(--moss-soft);}
+  .day-cell.empty{background:#F2EFE6;cursor:default;}
+  .day-cell.empty:hover{background:#F2EFE6;}
+  .day-cell.weekend{background:#FDFBF5;}
+  .day-cell.today{outline:2px solid var(--gold);outline-offset:-2px;}
+  .day-cell.past{background:#F5F3EC;}
+  .day-cell.past .day-num{color:var(--ink-soft);}
+  .day-num{font-family:'Noto Serif TC',serif;font-weight:700;font-size:14px;color:var(--ink);}
+  .day-cell.weekend .day-num{color:var(--rust);}
+  .day-badges{margin-top:6px;display:flex;flex-direction:column;gap:3px;}
+  .badge{
+    font-size:10.5px;line-height:1.3;padding:2px 5px;border-radius:4px;
+    background:var(--rust-soft);color:var(--rust);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .badge.reserved{background:var(--gold-soft);color:var(--gold);}
+  .badge.returned{background:var(--moss-soft);color:var(--moss);}
+  .badge.more{background:transparent;color:var(--ink-soft);font-style:italic;}
+
+  /* ---------- Inventory tab ---------- */
+  .inv-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .inv-toolbar h2{font-family:'Noto Serif TC',serif;font-size:19px;margin:0;}
+  .btn-group{display:flex;gap:8px;}
+  .btn-primary{
+    background:var(--ink);color:#fff;border:none;padding:9px 16px;border-radius:6px;
+    font-family:'Noto Sans TC',sans-serif;font-weight:600;font-size:13.5px;cursor:pointer;
+  }
+  .btn-primary:hover{background:#182238;}
+  .btn-outline{
+    background:#fff;color:var(--ink);border:1.3px solid var(--ink);padding:8px 14px;border-radius:6px;
+    font-family:'Noto Sans TC',sans-serif;font-weight:600;font-size:13px;cursor:pointer;
+  }
+  .btn-outline:hover{background:var(--moss-soft);}
+  .btn-text{background:none;border:none;color:var(--rust);cursor:pointer;font-size:12.5px;font-weight:600;padding:4px 6px;}
+
+  table.inv-table{width:100%;border-collapse:collapse;background:var(--card);border:1.5px solid var(--ink);border-radius:8px;overflow:hidden;}
+  table.inv-table thead th{
+    background:var(--ink);color:#fff;font-size:12.5px;font-weight:700;text-align:left;padding:10px 12px;
+  }
+  table.inv-table tbody td{padding:11px 12px;font-size:13.5px;border-bottom:1px solid var(--paper-line);}
+  table.inv-table tbody tr:last-child td{border-bottom:none;}
+  .cat-tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:#EFEAE0;color:var(--ink-soft);}
+  .qty-bar{width:90px;height:7px;background:#EDE7D8;border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:8px;}
+  .qty-bar span{display:block;height:100%;background:var(--moss);}
+  .qty-bar span.low{background:var(--rust);}
+  .avail-num{font-weight:700;}
+  .avail-num.low{color:var(--rust);}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(34,49,74,0.45);
+    align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--paper);border:1.5px solid var(--ink);border-radius:10px;
+    width:100%;max-width:460px;max-height:88vh;overflow-y:auto;
+    padding:22px 24px 24px;box-shadow:0 10px 30px rgba(0,0,0,0.2);
+  }
+  .modal h3{font-family:'Noto Serif TC',serif;font-size:18px;margin:0 0 4px;}
+  .modal .sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:16px;}
+  .field{margin-bottom:13px;}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .field select, .field input{
+    width:100%;padding:9px 10px;border:1.3px solid #CFC7B4;border-radius:6px;
+    font-family:'Noto Sans TC',sans-serif;font-size:13.5px;background:#fff;color:var(--ink);
+  }
+  .field select:focus, .field input:focus{outline:2px solid var(--gold);border-color:var(--gold);}
+  .field-row{display:flex;gap:10px;}
+  .field-row .field{flex:1;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+  .modal-close{position:sticky;top:0;float:right;background:none;border:none;font-size:20px;color:var(--ink-soft);cursor:pointer;line-height:1;}
+  .hint-small{font-size:11.5px;color:var(--ink-soft);margin-top:3px;}
+
+  .empty-state{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:13.5px;}
+
+  .day-panel-list{display:flex;flex-direction:column;gap:10px;margin:14px 0;max-height:260px;overflow-y:auto;}
+  .txn-row{
+    border:1px solid var(--paper-line);border-radius:8px;padding:10px 12px;background:#fff;
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+  }
+  .txn-row .txn-info{font-size:13px;}
+  .txn-row .txn-info b{display:block;font-size:13.5px;margin-bottom:2px;}
+  .txn-row .txn-info span{color:var(--ink-soft);font-size:12px;}
+  .status-pill{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:700;}
+  .status-pill.reserved{background:var(--gold-soft);color:var(--gold);}
+  .status-pill.borrowed{background:var(--rust-soft);color:var(--rust);}
+  .status-pill.returned{background:var(--moss-soft);color:var(--moss);}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;
+    opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:80;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-4px);}
+
+  footer.note{margin-top:26px;font-size:11.5px;color:var(--ink-soft);text-align:center;}
+
+  @media(max-width:640px){
+    header.top h1{font-size:23px;}
+    .day-cell{min-height:74px;}
+    .badge{font-size:9.5px;}
+    table.inv-table thead{display:none;}
+    table.inv-table, table.inv-table tbody, table.inv-table tr, table.inv-table td{display:block;width:100%;}
+    table.inv-table tr{border-bottom:1px solid var(--paper-line);padding:10px 0;}
+    table.inv-table td{padding:3px 12px;border-bottom:none;}
+    table.inv-table td:before{content:attr(data-label);font-weight:700;display:inline-block;width:80px;color:var(--ink-soft);font-size:11px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>設備登記系統</h1>
+      <div class="stamp">本機 JSON 檔案資料同步模式</div>
+    </div>
+    <div class="tabs">
+      <button id="tabCalBtn" class="active">行事曆登記</button>
+      <button id="tabInvBtn">設備庫存</button>
+    </div>
+  </header>
+
+  <!-- ===== Calendar Section ===== -->
+  <section id="calSection" class="active">
+    <div class="cal-toolbar">
+      <div class="month-nav">
+        <button class="nav" id="prevMonth">‹</button>
+        <div class="month-label" id="monthLabel">—</div>
+        <button class="nav" id="nextMonth">›</button>
+      </div>
+      <div class="legend">
+        <span><span class="dot g"></span>已預約</span>
+        <span><span class="dot b"></span>借用中</span>
+        <span><span class="dot r"></span>已歸還</span>
+      </div>
+    </div>
+    <div class="cal-grid">
+      <div class="dow-row">
+        <div class="weekend">日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div class="weekend">六</div>
+      </div>
+      <div id="calBody"></div>
+    </div>
+  </section>
+
+  <!-- ===== Inventory Section ===== -->
+  <section id="invSection">
+    <div class="inv-toolbar">
+      <h2>設備庫存清單</h2>
+      <div class="btn-group">
+        <button class="btn-outline" id="exportBtn">📥 匯出 JSON 檔</button>
+        <button class="btn-primary" id="addEquipBtn">＋ 新增設備</button>
+      </div>
+    </div>
+    <table class="inv-table">
+      <thead>
+        <tr><th>設備名稱</th><th>類別</th><th>總數量</th><th>已預約</th><th>借用中</th><th>可用數量</th><th></th></tr>
+      </thead>
+      <tbody id="invBody"></tbody>
+    </table>
+    <div id="invEmpty" class="empty-state" style="display:none;">尚無設備資料，點選「新增設備」開始建立庫存。</div>
+  </section>
+
+  <footer class="note">資料來源：同目錄下的 <code>data.json</code>。異動後點擊「匯出 JSON 檔」即可覆蓋更新本地檔。</footer>
+</div>
+
+<!-- Day detail / add registration modal -->
+<div class="modal-overlay" id="dayModalOverlay">
+  <div class="modal">
+    <button class="modal-close" id="closeDayModal">×</button>
+    <h3 id="dayModalTitle">日期登記</h3>
+    <div class="sub">當日借用／歸還紀錄</div>
+    <div class="day-panel-list" id="dayTxnList"></div>
+    <hr style="border:none;border-top:1px solid var(--paper-line);margin:14px 0;">
+    <div id="pastDateNotice" class="empty-state" style="display:none;padding:14px 0;">此日期已過，無法新增登記。</div>
+    <div id="newTxnForm">
+      <div class="sub" style="margin-bottom:10px;">新增借用登記</div>
+      <div class="field">
+        <label>設備</label>
+        <select id="txnEquip"></select>
+        <div class="hint-small" id="txnAvailHint"></div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>借用數量</label>
+          <input type="number" id="txnQty" min="1" value="1">
+        </div>
+        <div class="field">
+          <label>借用時間</label>
+          <input type="time" id="txnTime">
+        </div>
+      </div>
+      <div class="field">
+        <label>借用人</label>
+        <input type="text" id="txnBorrower" placeholder="姓名 / 部門">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-outline" id="cancelTxn">取消</button>
+        <button class="btn-primary" id="saveTxn">登記借出</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add equipment modal -->
+<div class="modal-overlay" id="equipModalOverlay">
+  <div class="modal">
+    <button class="modal-close" id="closeEquipModal">×</button>
+    <h3>新增設備</h3>
+    <div class="sub">建立設備後即可於行事曆登記借用</div>
+    <div class="field">
+      <label>設備名稱</label>
+      <input type="text" id="newEquipName" placeholder="例：筆記型電腦">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>類別</label>
+        <input type="text" id="newEquipCat" placeholder="例：3C設備">
+      </div>
+      <div class="field">
+        <label>總數量</label>
+        <input type="number" id="newEquipTotal" min="1" value="1">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-outline" id="cancelEquip">取消</button>
+      <button class="btn-primary" id="saveEquip">新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const JSON_PATH = './data.json';
+
+  let equipment = [];
+  let transactions = [];
+  let curYear = new Date().getFullYear(), curMonth = new Date().getMonth() + 1;
+  let selectedDate = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  function showToast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(()=>t.classList.remove('show'), 1800);
+  }
+
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+  // ---------- JSON IO Operations ----------
+  async function loadDataFromJSON(){
+    try {
+      const response = await fetch(JSON_PATH);
+      if(!response.ok) throw new Error("無讀取權限或找不到檔案");
+      const data = await response.json();
+      equipment = data.equipment || [];
+      transactions = data.transactions || [];
+    } catch(err) {
+      showToast('讀取 data.json 失敗，請確認已啟動 本地 HTTP 伺服器');
+      console.error(err);
+    }
+  }
+
+  function exportJSONFile(){
+    const payload = {
+      equipment,
+      transactions
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('已匯出最新 data.json');
+  }
+
+  // ---------- Computed ----------
+  function reservedQty(equipId){
+    return transactions
+      .filter(t => t.equipmentId === equipId && t.status === 'reserved')
+      .reduce((sum,t)=> sum + Number(t.qty||0), 0);
+  }
+  function borrowedQty(equipId){
+    return transactions
+      .filter(t => t.equipmentId === equipId && t.status === 'borrowed')
+      .reduce((sum,t)=> sum + Number(t.qty||0), 0);
+  }
+  function availableQty(eq){
+    return eq.total - reservedQty(eq.id) - borrowedQty(eq.id);
+  }
+
+  // ---------- Tabs ----------
+  $('tabCalBtn').addEventListener('click', ()=>switchTab('cal'));
+  $('tabInvBtn').addEventListener('click', ()=>switchTab('inv'));
+  function switchTab(which){
+    $('calSection').classList.toggle('active', which==='cal');
+    $('invSection').classList.toggle('active', which==='inv');
+    $('tabCalBtn').classList.toggle('active', which==='cal');
+    $('tabInvBtn').classList.toggle('active', which==='inv');
+  }
+
+  // ---------- Calendar rendering ----------
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+  function renderCalendar(){
+    $('monthLabel').textContent = `${curYear}年 ${monthNames[curMonth-1]}`;
+    const body = $('calBody');
+    body.innerHTML = '';
+
+    const firstDay = new Date(curYear, curMonth-1, 1);
+    const startWeekday = firstDay.getDay(); // 0=Sun
+    const daysInMonth = new Date(curYear, curMonth, 0).getDate();
+    const todayStr = new Date().toISOString().slice(0,10);
+
+    let cells = [];
+    for(let i=0;i<startWeekday;i++) cells.push(null);
+    for(let d=1; d<=daysInMonth; d++) cells.push(d);
+    while(cells.length % 7 !== 0) cells.push(null);
+
+    for(let w=0; w<cells.length/7; w++){
+      const row = document.createElement('div');
+      row.className = 'week-row';
+      for(let i=0;i<7;i++){
+        const dayNum = cells[w*7+i];
+        const cell = document.createElement('div');
+        const isWeekend = (i===0 || i===6);
+        if(dayNum === null){
+          cell.className = 'day-cell empty';
+          row.appendChild(cell);
+          continue;
+        }
+        const dateStr = `${curYear}-${String(curMonth).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+        cell.className = 'day-cell' + (isWeekend?' weekend':'') + (dateStr===todayStr?' today':'') + (dateStr<todayStr?' past':'');
+        cell.dataset.date = dateStr;
+
+        const numEl = document.createElement('div');
+        numEl.className = 'day-num';
+        numEl.textContent = dayNum;
+        cell.appendChild(numEl);
+
+        const dayTxns = transactions.filter(t=>t.date===dateStr);
+        if(dayTxns.length){
+          const badgeWrap = document.createElement('div');
+          badgeWrap.className = 'day-badges';
+          dayTxns.slice(0,2).forEach(t=>{
+            const eq = equipment.find(e=>e.id===t.equipmentId);
+            const b = document.createElement('div');
+            b.className = 'badge' + (t.status==='returned' ? ' returned' : t.status==='reserved' ? ' reserved' : '');
+            b.textContent = (eq?eq.name:'已刪除設備') + ' ×' + t.qty;
+            badgeWrap.appendChild(b);
+          });
+          if(dayTxns.length>2){
+            const more = document.createElement('div');
+            more.className = 'badge more';
+            more.textContent = `+${dayTxns.length-2} 筆`;
+            badgeWrap.appendChild(more);
+          }
+          cell.appendChild(badgeWrap);
+        }
+
+        cell.addEventListener('click', ()=>openDayModal(dateStr));
+        row.appendChild(cell);
+      }
+      body.appendChild(row);
+    }
+  }
+
+  $('prevMonth').addEventListener('click', ()=>{
+    curMonth--; if(curMonth<1){curMonth=12;curYear--;}
+    renderCalendar();
+  });
+  $('nextMonth').addEventListener('click', ()=>{
+    curMonth++; if(curMonth>12){curMonth=1;curYear++;}
+    renderCalendar();
+  });
+
+  // ---------- Day modal ----------
+  function openDayModal(dateStr){
+    selectedDate = dateStr;
+    const d = new Date(dateStr+'T00:00:00');
+    $('dayModalTitle').textContent = `${dateStr}（${['日','一','二','三','四','五','六'][d.getDay()]}）登記`;
+    renderDayTxnList();
+    const todayStr = new Date().toISOString().slice(0,10);
+    const isPast = dateStr < todayStr;
+    $('pastDateNotice').style.display = isPast ? 'block' : 'none';
+    $('newTxnForm').style.display = isPast ? 'none' : 'block';
+    if(!isPast){
+      populateEquipSelect();
+      $('txnQty').value = 1;
+      $('txnTime').value = '';
+      $('txnBorrower').value = '';
+    }
+    $('dayModalOverlay').classList.add('open');
+  }
+  $('closeDayModal').addEventListener('click', ()=>$('dayModalOverlay').classList.remove('open'));
+  $('cancelTxn').addEventListener('click', ()=>$('dayModalOverlay').classList.remove('open'));
+  $('dayModalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='dayModalOverlay') $('dayModalOverlay').classList.remove('open'); });
+
+  function renderDayTxnList(){
+    const list = $('dayTxnList');
+    const dayTxns = transactions.filter(t=>t.date===selectedDate);
+    if(!dayTxns.length){
+      list.innerHTML = '<div class="empty-state" style="padding:14px 0;">此日尚無登記紀錄</div>';
+      return;
+    }
+    list.innerHTML = '';
+    dayTxns.forEach(t=>{
+      const eq = equipment.find(e=>e.id===t.equipmentId);
+      const row = document.createElement('div');
+      row.className = 'txn-row';
+      row.innerHTML = `
+        <div class="txn-info">
+          <b>${eq?eq.name:'已刪除設備'} ×${t.qty}</b>
+          <span>${t.borrower||'未填借用人'}${t.time?(' · '+t.time):''}</span>
+        </div>
+      `;
+      const right = document.createElement('div');
+      right.style.display='flex';right.style.alignItems='center';right.style.gap='8px';
+      const pill = document.createElement('span');
+      pill.className = 'status-pill ' + t.status;
+      pill.textContent = t.status==='reserved' ? '已預約' : (t.status==='borrowed' ? '借用中' : '已歸還');
+      right.appendChild(pill);
+      if(t.status==='reserved'){
+        const btn = document.createElement('button');
+        btn.className = 'btn-text';
+        btn.textContent = '標記借用中';
+        btn.style.color = 'var(--rust)';
+        btn.addEventListener('click', ()=>{
+          t.status = 'borrowed';
+          t.borrowTime = new Date().toTimeString().slice(0,5);
+          renderDayTxnList(); renderCalendar(); renderInventory();
+          showToast('已標記借用中，請記得點擊「匯出 JSON 檔」');
+        });
+        right.appendChild(btn);
+      }
+      if(t.status==='borrowed'){
+        const btn = document.createElement('button');
+        btn.className = 'btn-text';
+        btn.textContent = '標記歸還';
+        btn.style.color = 'var(--moss)';
+        btn.addEventListener('click', ()=>{
+          t.status = 'returned';
+          t.returnTime = new Date().toTimeString().slice(0,5);
+          renderDayTxnList(); renderCalendar(); renderInventory();
+          showToast('已標記歸還，請記得點擊「匯出 JSON 檔」');
+        });
+        right.appendChild(btn);
+      }
+      const del = document.createElement('button');
+      del.className = 'btn-text';
+      del.textContent = '刪除';
+      del.addEventListener('click', ()=>{
+        transactions = transactions.filter(x=>x.id!==t.id);
+        renderDayTxnList(); renderCalendar(); renderInventory();
+        showToast('已刪除紀錄，請記得點擊「匯出 JSON 檔」');
+      });
+      right.appendChild(del);
+      row.appendChild(right);
+      list.appendChild(row);
+    });
+  }
+
+  function populateEquipSelect(){
+    const sel = $('txnEquip');
+    sel.innerHTML = '';
+    if(!equipment.length){
+      sel.innerHTML = '<option value="">尚無設備，請先於「設備庫存」新增</option>';
+      $('txnAvailHint').textContent = '';
+      return;
+    }
+    equipment.forEach(eq=>{
+      const opt = document.createElement('option');
+      opt.value = eq.id;
+      opt.textContent = `${eq.name}（可用 ${availableQty(eq)} / 共 ${eq.total}）`;
+      sel.appendChild(opt);
+    });
+    updateAvailHint();
+    sel.addEventListener('change', updateAvailHint);
+  }
+  function updateAvailHint(){
+    const eq = equipment.find(e=>e.id===$('txnEquip').value);
+    $('txnAvailHint').textContent = eq ? `目前可用數量：${availableQty(eq)}` : '';
+  }
+
+  $('saveTxn').addEventListener('click', ()=>{
+    const todayStr = new Date().toISOString().slice(0,10);
+    if(selectedDate < todayStr){ showToast('過往日期無法新增登記'); return; }
+    const equipId = $('txnEquip').value;
+    const eq = equipment.find(e=>e.id===equipId);
+    if(!eq){ showToast('請先新增設備'); return; }
+    const qty = Math.max(1, parseInt($('txnQty').value||'1',10));
+    const avail = availableQty(eq);
+    if(qty > avail){
+      showToast(`可用數量不足（剩餘 ${avail}）`);
+      return;
+    }
+    const borrower = $('txnBorrower').value.trim();
+    if(!borrower){ showToast('請填寫借用人'); return; }
+    transactions.push({
+      id: uid(),
+      equipmentId: equipId,
+      date: selectedDate,
+      qty,
+      borrower,
+      time: $('txnTime').value || '',
+      status: 'reserved',
+    });
+    renderDayTxnList(); renderCalendar(); renderInventory(); populateEquipSelect();
+    $('txnQty').value = 1; $('txnBorrower').value=''; $('txnTime').value='';
+    showToast('登記成功，請記得點擊「匯出 JSON 檔」儲存異動');
+  });
+
+  // ---------- Inventory rendering ----------
+  function renderInventory(){
+    const body = $('invBody');
+    body.innerHTML = '';
+    $('invEmpty').style.display = equipment.length ? 'none' : 'block';
+    equipment.forEach(eq=>{
+      const reserved = reservedQty(eq.id);
+      const borrowed = borrowedQty(eq.id);
+      const avail = eq.total - reserved - borrowed;
+      const pct = eq.total>0 ? Math.max(0, Math.min(100, (avail/eq.total)*100)) : 0;
+      const low = avail <= Math.ceil(eq.total*0.2);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td data-label="設備名稱"><b>${eq.name}</b></td>
+        <td data-label="類別"><span class="cat-tag">${eq.category||'未分類'}</span></td>
+        <td data-label="總數量">${eq.total}</td>
+        <td data-label="已預約">${reserved}</td>
+        <td data-label="借用中">${borrowed}</td>
+        <td data-label="可用數量">
+          <span class="avail-num ${low?'low':''}">${avail}</span>
+          <span class="qty-bar"><span class="${low?'low':''}" style="width:${pct}%"></span></span>
+        </td>
+        <td data-label=""></td>
+      `;
+      const actionTd = tr.querySelector('td:last-child');
+      const del = document.createElement('button');
+      del.className = 'btn-text';
+      del.textContent = '刪除設備';
+      del.addEventListener('click', ()=>{
+        if(reserved>0 || borrowed>0){ showToast('此設備尚有已預約或借用中的登記，無法刪除'); return; }
+        equipment = equipment.filter(e=>e.id!==eq.id);
+        transactions = transactions.filter(t=>t.equipmentId!==eq.id);
+        renderInventory(); renderCalendar();
+        showToast('已刪除設備，請記得點擊「匯出 JSON 檔」');
+      });
+      actionTd.appendChild(del);
+      body.appendChild(tr);
+    });
+  }
+
+  // ---------- Add equipment modal ----------
+  $('addEquipBtn').addEventListener('click', ()=>{
+    $('newEquipName').value=''; $('newEquipCat').value=''; $('newEquipTotal').value=1;
+    $('equipModalOverlay').classList.add('open');
+  });
+  $('closeEquipModal').addEventListener('click', ()=>$('equipModalOverlay').classList.remove('open'));
+  $('cancelEquip').addEventListener('click', ()=>$('equipModalOverlay').classList.remove('open'));
+  $('equipModalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='equipModalOverlay') $('equipModalOverlay').classList.remove('open'); });
+
+  $('saveEquip').addEventListener('click', ()=>{
+    const name = $('newEquipName').value.trim();
+    const cat = $('newEquipCat').value.trim();
+    const total = Math.max(1, parseInt($('newEquipTotal').value||'1',10));
+    if(!name){ showToast('請填寫設備名稱'); return; }
+    equipment.push({ id: uid(), name, category: cat, total });
+    renderInventory();
+    $('equipModalOverlay').classList.remove('open');
+    showToast('已新增設備，請記得點擊「匯出 JSON 檔」儲存異動');
+  });
+
+  $('exportBtn').addEventListener('click', exportJSONFile);
+
+  // ---------- Init ----------
+  (async function init(){
+    await loadDataFromJSON();
+    renderCalendar();
+    renderInventory();
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "equipment": [
+    { "id": "eq_1", "name": "筆記型電腦", "category": "3C設備", "total": 6 },
+    { "id": "eq_2", "name": "投影機", "category": "視聽器材", "total": 2 },
+    { "id": "eq_3", "name": "會議室麥克風組", "category": "視聽器材", "total": 3 }
+  ],
+  "transactions": []
+}
